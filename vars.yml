@@ -1,0 +1,8 @@
+controller_host:          # Ansible Contoller host example https://student1.rh82a1.example.opentlc.com/
+controller_username: admin
+controller_password:      #Ansible Admin password example 'lYUxcfwqmJ5fRc'
+rh_autohub_url:           # RedHat Cloud automation hub sync url example https://console.redhat.com/api/automation-hub/content/#######-synclist/
+rh_autohub_token:         # RedHat Cloud Token
+rh_autohub_auth_url:      # RedHat Cloud Auth URL example https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token
+aws_access_key:           # AWS Access Key
+aws_secret_key:           # AWS Secret Key

@@ -1,0 +1,116 @@
+---
+- name: preconfigure the aap environment
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+  - ./vars.yml
+  vars_prompt:
+  - name: demo_type
+    prompt: Which demo env ( cloud, linux, windows )
+    default: "cloud"
+    private: no
+
+  tasks:
+  - name: Create a Automation Hub Credential to cloud.redhat.com
+    ansible.controller.credential:
+      name: Automation Hub
+      controller_host: "{{ controller_host }}"
+      controller_username: "{{ controller_username }}"
+      controller_password: "{{ controller_password }}"
+      credential_type: Ansible Galaxy/Automation Hub API Token
+      organization: Default
+      inputs:
+        url: "{{ rh_autohub_url }}"
+        token: "{{ rh_autohub_token }}"
+        auth_url: "{{ rh_autohub_auth_url }}"
+    tags: credentials
+
+  - name: Set the Galaxy credentials for the default organization
+    ansible.controller.organization:
+      controller_host: "{{ controller_host }}"
+      controller_username: "{{ controller_username }}"
+      controller_password: "{{ controller_password }}"
+      name: "Default"
+      state: present
+      galaxy_credentials:
+        - Automation Hub
+    tags: credentials
+
+  - name: Set the Galaxy credentials for the default organization
+    ansible.controller.organization:
+      controller_host: "{{ controller_host }}"
+      controller_username: "{{ controller_username }}"
+      controller_password: "{{ controller_password }}"
+      name: "Default"
+      state: present
+      galaxy_credentials:
+        - Automation Hub
+        - Ansible Galaxy
+    tags: credentials
+
+  - name: Update Demo Project
+    ansible.controller.project:
+      controller_host: "{{ controller_host }}"
+      controller_username: "{{ controller_username }}"
+      controller_password: "{{ controller_password }}"
+      name: "Ansible official demo project"
+      organization: "Default"
+      state: present
+      scm_type: git
+      scm_url: https://github.com/RHMTT/product-demos.git
+      scm_branch: main
+      update_project: true
+    tags: projects
+
+  - name: Remove old Template
+    ansible.controller.job_template:
+      controller_host: "{{ controller_host }}"
+      controller_username: "{{ controller_username }}"
+      controller_password: "{{ controller_password }}"
+      name: "INFRASTRUCTURE / Deploy Application"
+      state: "absent"
+    tags: job_templates
+
+  - name: Create Setup Template
+    ansible.controller.job_template:
+      controller_host: "{{ controller_host }}"
+      controller_username: "{{ controller_username }}"
+      controller_password: "{{ controller_password }}"
+      name: "Setup"
+      job_type: "run"
+      organization: "Default"
+      inventory: "Workshop Inventory"
+      execution_environment: "Control Plane Execution Environment"
+      project: "Ansible official demo project"
+      playbook: "setup_demo.yml"
+      credentials:
+        - "Controller Credential"
+      state: "present"
+      ask_variables_on_launch: true
+      extra_vars:
+        demo: "{{ demo_type }}"
+    tags: demo 
+
+  - name: Launch a job
+    ansible.controller.job_launch:
+      controller_host: "{{ controller_host }}"
+      controller_username: "{{ controller_username }}"
+      controller_password: "{{ controller_password }}"
+      job_template: "Setup"
+      extra_vars:
+        demo: "{{ demo_type }}"
+    register: job
+    tags: demo
+
+  - name: Create AWS Credential
+    ansible.controller.credential:
+      name: AWS
+      controller_host: "{{ controller_host }}"
+      controller_username: "{{ controller_username }}"
+      controller_password: "{{ controller_password }}"
+      credential_type: Amazon Web Services
+      organization: Default
+      inputs:
+        password: "{{ aws_secret_key }}"
+        username: "{{ aws_access_key }}"
+    tags: credentials
